@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced QR Code Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+    <style>
+        @keyframes fadeScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .input-focus-ring {
+            transition: all 0.2s ease;
+        }
+        .input-focus-ring:focus {
+            box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.5);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 backdrop-blur-sm bg-opacity-90">
+            <h2 class="text-3xl font-bold text-center mb-8 text-blue-900">QR Code Generator</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-blue-900 mb-2">Enter Text or URL:</label>
+                        <input type="text" id="qrText" placeholder="Enter text or URL" 
+                               class="w-full p-3 border border-blue-200 rounded-xl input-focus-ring">
+                    </div>
+
+                    <div hidden>
+                        <label class="block text-sm font-medium text-blue-900 mb-2">Upload Logo (optional):</label>
+                        <input type="file" id="logoInput" accept="image/*"
+                               class="w-full p-3 border border-blue-200 rounded-xl">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-blue-900 mb-2">Logo Size (%):</label>
+                        <input type="range" id="logoSize" min="5" max="30" value="15"
+                               class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="text-sm text-blue-600 mt-1" id="logoSizeValue">15%</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-blue-900 mb-2">Size (px):</label>
+                            <input type="number" id="qrSize" value="200" min="100" max="500"
+                                   class="w-full p-3 border border-blue-200 rounded-xl input-focus-ring">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-blue-900 mb-2">Error Correction:</label>
+                            <select id="qrCorrection" 
+                                    class="w-full p-3 border border-blue-200 rounded-xl input-focus-ring">
+                                <option value="L">Low (L)</option>
+                                <option value="M">Medium (M)</option>
+                                <option value="Q" selected>Quartile (Q)</option>
+                                <option value="H">High (H)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-blue-900 mb-2">QR Color:</label>
+                            <input type="color" id="qrColor" value="#1e3a8a"
+                                   class="w-full h-12 rounded-xl input-focus-ring">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-blue-900 mb-2">Background:</label>
+                            <input type="color" id="qrBgColor" value="#ffffff"
+                                   class="w-full h-12 rounded-xl input-focus-ring">
+                        </div>
+                    </div>
+
+                    <button onclick="generateQR()" 
+                            class="w-full bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transform hover:scale-105 transition duration-300 shadow-lg">
+                        Generate QR Code
+                    </button>
+                </div>
+
+                <div class="flex flex-col items-center justify-center space-y-6">
+                    <div id="qrCodeContainer" class="p-6 bg-white rounded-2xl shadow-lg opacity-0 transition-all duration-500"></div>
+                    
+                    <div class="flex space-x-4">
+                        <button onclick="downloadQR()" 
+                                class="bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transform hover:scale-105 transition duration-300 shadow-lg flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        <button onclick="copyQR()" 
+                                class="bg-amber-600 text-white px-6 py-3 rounded-xl hover:bg-amber-700 transform hover:scale-105 transition duration-300 shadow-lg flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                            <span>Copy URL</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let qr;
+        const logoSizeSlider = document.getElementById("logoSize");
+        const logoSizeValue = document.getElementById("logoSizeValue");
+
+        logoSizeSlider.addEventListener("input", (e) => {
+            logoSizeValue.textContent = `${e.target.value}%`;
+        });
+
+        function generateQR() {
+            let text = document.getElementById("qrText").value;
+            let size = document.getElementById("qrSize").value;
+            let color = document.getElementById("qrColor").value;
+            let bgColor = document.getElementById("qrBgColor").value;
+            let correction = document.getElementById("qrCorrection").value;
+            let container = document.getElementById("qrCodeContainer");
+            let logoInput = document.getElementById("logoInput");
+            let logoSize = document.getElementById("logoSize").value;
+
+            if (!text) {
+                alert("Please enter text or a URL");
+                return;
+            }
+
+            container.innerHTML = "";
+            container.style.animation = "fadeScale 0.5s ease forwards";
+
+            qr = new QRCode(container, {
+                text: text,
+                width: parseInt(size),
+                height: parseInt(size),
+                colorDark: color,
+                colorLight: bgColor,
+                correctLevel: QRCode.CorrectLevel[correction]
+            });
+
+            if (logoInput.files && logoInput.files[0]) {
+                setTimeout(() => {
+                    addLogo(logoInput.files[0], parseInt(size), logoSize);
+                }, 100);
+            }
+
+            container.classList.remove("opacity-0");
+            container.classList.add("opacity-100");
+        }
+
+        function addLogo(logoFile, qrSize, logoSizePercent) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.querySelector("#qrCodeContainer img");
+                const logo = new Image();
+                logo.src = e.target.result;
+                logo.onload = function() {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    const logoSize = (qrSize * logoSizePercent) / 100;
+                    
+                    canvas.width = qrSize;
+                    canvas.height = qrSize;
+                    
+                    // Draw QR code
+                    ctx.drawImage(img, 0, 0, qrSize, qrSize);
+                    
+                    // Draw logo in center
+                    const logoX = (qrSize - logoSize) / 2;
+                    const logoY = (qrSize - logoSize) / 2;
+                    
+                    // Add white background for logo
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(logoX, logoY, logoSize, logoSize);
+                    
+                    // Draw logo
+                    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+                    
+                    // Replace QR code with new canvas
+                    img.src = canvas.toDataURL();
+                };
+            };
+            reader.readAsDataURL(logoFile);
+        }
+
+        function downloadQR() {
+            if (!qr) {
+                alert("Generate a QR code first!");
+                return;
+            }
+            let img = document.querySelector("#qrCodeContainer img");
+            let a = document.createElement("a");
+            a.href = img.src;
+            a.download = "qr-code.png";
+            a.click();
+        }
+
+        function copyQR() {
+            if (!qr) {
+                alert("Generate a QR code first!");
+                return;
+            }
+            let img = document.querySelector("#qrCodeContainer img");
+            navigator.clipboard.writeText(img.src)
+                .then(() => {
+                    alert("QR Code URL copied!");
+                })
+                .catch(err => console.error("Copy failed", err));
+        }
+    </script>
+</body>
+</html>
